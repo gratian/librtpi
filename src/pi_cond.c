@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <pthread.h>
+
 #include "rtpi.h"
 #include "pi_futex.h"
 
@@ -41,12 +43,28 @@ int pi_cond_init(pi_cond_t *cond, pi_mutex_t *mutex, uint32_t flags)
 	return 0;
 }
 
+struct cancel_data {
+	int state;
+	int type;
+	pi_mutex_t *mutex;
+};
+
+static void pi_cond_wait_cleanup(void *arg)
+{
+	struct cancel_data *cdata = (struct cancel_data*)arg;
+
+	if ((cdata->state == PTHREAD_CANCEL_ENABLE) &&
+	    (cdata->type == PTHREAD_CANCEL_DEFERRED))
+		pi_mutex_lock(cdata->mutex);
+}
+
 int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 {
 	int ret;
 	int err;
 	__u32 wait_id;
 	__u32 futex_id;
+	struct cancel_data cdata = { .mutex = cond->mutex };
 
 	cond->cond++;
 	wait_id = cond->cond;
@@ -56,8 +74,18 @@ int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 	if (ret)
 		return ret;
 
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cdata.state);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &cdata.type);
+	pthread_cleanup_push(pi_cond_wait_cleanup, &cdata);
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+
 	ret = futex_wait_requeue_pi(cond, futex_id, abstime, cond->mutex);
 	err = errno;
+
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+	pthread_cleanup_pop(0);
+	pthread_setcanceltype(cdata.type, NULL);
+	pthread_setcancelstate(cdata.state, NULL);
 
 	/* All good. Proper wakeup + we own the lock */
 	if (!ret)
