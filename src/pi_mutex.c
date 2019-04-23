@@ -36,7 +36,7 @@ int pi_mutex_init(pi_mutex_t *mutex, uint32_t flags)
 
 	/* Check for unknown options */
 	if (flags & ~(RTPI_MUTEX_PSHARED)) {
-		ret = -EINVAL;
+		ret = EINVAL;
 		goto out;
 	}
 
@@ -55,10 +55,15 @@ int pi_mutex_destroy(pi_mutex_t *mutex)
 
 int pi_mutex_lock(pi_mutex_t *mutex)
 {
-	if (pi_mutex_trylock(mutex))
-		return 0;
-	/* XXX EWNERDEAD */
-	return futex_lock_pi(mutex);
+	int ret;
+
+	if (!mutex)
+		return EINVAL;
+
+	ret = pi_mutex_trylock(mutex);
+	if (!ret || ret == EDEADLOCK)
+		return ret;
+	return (futex_lock_pi(mutex)) ? errno : 0;
 }
 
 #define FUTEX_TID_MASK          0x3fffffff
@@ -70,13 +75,11 @@ int pi_mutex_trylock(pi_mutex_t *mutex)
 
 	pid = gettid();
 	if (pid == (mutex->futex & FUTEX_TID_MASK))
-		return -EDEADLOCK;
+		return EDEADLOCK;
 
 	ret = __sync_bool_compare_and_swap(&mutex->futex,
 					   0, pid);
-	if (ret == true)
-		return 1;
-	return 0;
+	return (ret) ? 0 : EBUSY;
 }
 
 int pi_mutex_unlock(pi_mutex_t *mutex)
@@ -84,14 +87,16 @@ int pi_mutex_unlock(pi_mutex_t *mutex)
 	pid_t pid;
 	bool ret;
 
+	if (!mutex)
+		return EINVAL;
+
 	pid = gettid();
-#if 0
-	XXX
 	if (pid != (mutex->futex & FUTEX_TID_MASK))
-#endif
+		return EPERM;
+
 	ret = __sync_bool_compare_and_swap(&mutex->futex,
 					   pid, 0);
 	if (ret == true)
 		return 0;
-	return futex_unlock_pi(mutex);
+	return (futex_unlock_pi(mutex)) ? errno : 0;
 }
