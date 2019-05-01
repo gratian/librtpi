@@ -5,11 +5,23 @@
 #include "pi_futex.h"
 #include <stdbool.h>
 #include <string.h>
+#include <pthread.h>
+
+static pthread_once_t run_once = PTHREAD_ONCE_INIT;
+static __thread pid_t tid_this_thread;
+
+static void cleartid(void)
+{
+	tid_this_thread = 0;
+}
+
+static void install_atfork_handler()
+{
+	pthread_atfork(NULL, NULL, cleartid);
+}
 
 static pid_t gettid(void)
 {
-	static __thread pid_t tid_this_thread;
-
 	if (tid_this_thread)
 		return tid_this_thread;
 
@@ -30,6 +42,10 @@ void pi_mutex_free(pi_mutex_t *mutex)
 int pi_mutex_init(pi_mutex_t *mutex, uint32_t flags)
 {
 	int ret;
+
+	ret = pthread_once(&run_once, install_atfork_handler);
+	if (ret)
+		goto out;
 
 	/* All RTPI mutexes are PRIO_INHERIT */
 	memset(mutex, 0, sizeof(*mutex));
