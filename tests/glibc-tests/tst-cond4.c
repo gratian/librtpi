@@ -104,19 +104,47 @@ static int do_test(void)
 		puts("fork failed");
 		return 1;
 	} else if (pid == 0) {
+		if (pi_mutex_lock(mut1) != 0) {
+			puts("child: 2nd mutex_lock failed");
+			return 1;
+		}
+
 		if (pi_mutex_lock(mut2) != 0) {
-			puts("child: mutex_lock failed");
+			puts("child: 3rd mutex_lock failed");
+			return 1;
+		}
+
+		if (pi_cond_signal(cond, mut2) != 0) {
+			puts("child: cond_signal failed");
+			return 1;
+		}
+
+		*condition = 1;
+
+		if (pi_mutex_unlock(mut2) != 0) {
+			puts("child: mutex_unlock failed");
+			return 1;
+		}
+
+		puts("child done");
+
+	} else {
+		int status;
+
+		if (pi_mutex_lock(mut2) != 0) {
+			puts("parent: mutex_lock failed");
 			return 1;
 		}
 
 		if (pi_mutex_unlock(mut1) != 0) {
-			puts("child: 1st mutex_unlock failed");
+			puts("parent: 1st mutex_unlock failed");
 			return 1;
 		}
+
 #ifdef TIMED
 		struct timespec ts;
 		if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
-			puts("child: clock_gettime failed");
+			puts("parent: clock_gettime failed");
 			exit(1);
 		}
 
@@ -125,46 +153,19 @@ static int do_test(void)
 			ts.tv_nsec -= 1000000000;
 			++ts.tv_sec;
 		}
-
 		do
 			if (pi_cond_timedwait(cond, mut2, &ts) != 0) {
 #else
 		do
 			if (pi_cond_wait(cond, mut2) != 0) {
 #endif
-				puts("child: cond_wait failed");
+				puts("parent: cond_wait failed");
 				return 1;
 			}
 		while (*condition == 0) ;
 
 		if (pi_mutex_unlock(mut2) != 0) {
-			puts("child: 2nd mutex_unlock failed");
-			return 1;
-		}
-
-		puts("child done");
-	} else {
-		int status;
-
-		if (pi_mutex_lock(mut1) != 0) {
-			puts("parent: 2nd mutex_lock failed");
-			return 1;
-		}
-
-		if (pi_mutex_lock(mut2) != 0) {
-			puts("parent: 3rd mutex_lock failed");
-			return 1;
-		}
-
-		if (pi_cond_signal(cond, mut2) != 0) {
-			puts("parent: cond_signal failed");
-			return 1;
-		}
-
-		*condition = 1;
-
-		if (pi_mutex_unlock(mut2) != 0) {
-			puts("parent: mutex_unlock failed");
+			puts("parent: 2nd mutex_unlock failed");
 			return 1;
 		}
 
