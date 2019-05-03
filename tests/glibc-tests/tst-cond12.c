@@ -26,6 +26,7 @@
 #include <sys/wait.h>
 
 #include "rtpi.h"
+#include "test-driver.h"
 
 static char fname[] = "/tmp/tst-cond12-XXXXXX";
 static int fd;
@@ -51,6 +52,9 @@ static void cleanup(void)
 
 static int do_test(void)
 {
+	SKIP_TEST("re-mapping process shared mutexes associated with a "
+		  "condvar not supported by the current librtpi API");
+
 	struct {
 		pi_mutex_t m;
 		pi_cond_t c;
