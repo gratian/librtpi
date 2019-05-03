@@ -32,7 +32,7 @@ int *condition;
 static int do_test(void)
 {
 	size_t ps = sysconf(_SC_PAGESIZE);
-	char tmpfname[] = "/tmp/tst-cond4.XXXXXX";
+	char tmpfname[] = "/tmp/tst-cond4_6.XXXXXX";
 	char data[ps];
 	void *mem;
 	int fd;
@@ -113,9 +113,25 @@ static int do_test(void)
 			puts("child: 1st mutex_unlock failed");
 			return 1;
 		}
+#ifdef TIMED
+		struct timespec ts;
+		if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+			puts("child: clock_gettime failed");
+			exit(1);
+		}
+
+		ts.tv_nsec += 500000000;
+		if (ts.tv_nsec >= 1000000000) {
+			ts.tv_nsec -= 1000000000;
+			++ts.tv_sec;
+		}
 
 		do
+			if (pi_cond_timedwait(cond, mut2, &ts) != 0) {
+#else
+		do
 			if (pi_cond_wait(cond, mut2) != 0) {
+#endif
 				puts("child: cond_wait failed");
 				return 1;
 			}
