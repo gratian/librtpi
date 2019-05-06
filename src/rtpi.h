@@ -46,7 +46,8 @@ int pi_mutex_unlock(pi_mutex_t *mutex);
 #define DEFINE_PI_COND(condvar, mutex, flags) \
 	pi_cond_t condvar = PI_COND_INIT(mutex, flags)
 
-#define RTPI_COND_PSHARED     RTPI_MUTEX_PSHARED
+#define RTPI_COND_PSHARED		RTPI_MUTEX_PSHARED
+#define RTPI_COND_CLOCK_REALTIME	(RTPI_COND_PSHARED << 1)
 
 pi_cond_t *pi_cond_alloc(void);
 

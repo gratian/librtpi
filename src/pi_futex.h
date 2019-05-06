@@ -68,8 +68,13 @@ static inline int futex_wait_requeue_pi(pi_cond_t *cond, __u32 val,
 					const struct timespec *restrict utime,
 					pi_mutex_t *mutex)
 {
+	__u32 op = get_op(FUTEX_WAIT_REQUEUE_PI, cond->flags);
+
+	if (cond->flags & RTPI_COND_CLOCK_REALTIME)
+		op |= FUTEX_CLOCK_REALTIME;
+
 	return sys_futex(&cond->cond,
-			 get_op(FUTEX_WAIT_REQUEUE_PI, cond->flags),
+			 op,
 			 val,
 			 utime,
 			 &mutex->futex,

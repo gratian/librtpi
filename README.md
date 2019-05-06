@@ -117,6 +117,7 @@ condition variable.
 
 ##### Where flags are:
 * RTPI_COND_PSHARED
+* RTPI_COND_CLOCK_REALTIME
 
 #### int pi_cond_destroy(pi_cond_t \*cond)
 

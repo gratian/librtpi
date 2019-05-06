@@ -29,7 +29,7 @@ void pi_cond_free(pi_cond_t *cond)
 
 int pi_cond_init(pi_cond_t *cond, pi_mutex_t *mutex, uint32_t flags)
 {
-	if (flags & ~(RTPI_COND_PSHARED))
+	if (flags & ~(RTPI_COND_PSHARED | RTPI_COND_CLOCK_REALTIME))
 		return EINVAL;
 
 	/* PSHARED has to match on both. */
