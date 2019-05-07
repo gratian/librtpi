@@ -144,14 +144,9 @@ int pi_cond_signal(pi_cond_t *cond)
 
 	do {
 		ret = futex_cmp_requeue_pi(cond, id, 0, cond->mutex);
-		if (ret > 0) {
+		if (ret >= 0) {
 			/* Wakeup performed */
 			break;
-		} else if (ret == 0) {
-			/* nothing woke up */
-			pi_mutex_lock(&cond->priv_mut);
-			cond->pending_wake--;
-			pi_mutex_unlock(&cond->priv_mut);
 		} else if (errno == EAGAIN) {
 			/* id changed */
 			pi_mutex_lock(&cond->priv_mut);
