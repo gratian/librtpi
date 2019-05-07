@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <limits.h>
 #include "rtpi.h"
 #include "pi_futex.h"
@@ -121,7 +122,7 @@ int pi_cond_wait(pi_cond_t *cond, pi_mutex_t *mutex)
 	return pi_cond_timedwait(cond, mutex, NULL);
 }
 
-int pi_cond_signal(pi_cond_t *cond, pi_mutex_t *mutex)
+static int pi_cond_signal_common(pi_cond_t *cond, pi_mutex_t *mutex, bool broadcast)
 {
 	int ret;
 	__u32 id;
@@ -136,11 +137,16 @@ int pi_cond_signal(pi_cond_t *cond, pi_mutex_t *mutex)
 	cond->cond++;
 	id = cond->cond;
 	cond->wake_id = id;
-	cond->pending_wake++;
+	if (broadcast)
+		cond->pending_wake = cond->pending_wait;
+	else
+		cond->pending_wake++;
 	pi_mutex_unlock(&cond->priv_mut);
 
 	do {
-		ret = futex_cmp_requeue_pi(cond, id, 0, mutex);
+		ret = futex_cmp_requeue_pi(cond, id,
+					   (broadcast) ? INT_MAX : 0,
+					   mutex);
 		if (ret >= 0) {
 			/* Wakeup performed */
 			break;
@@ -150,6 +156,8 @@ int pi_cond_signal(pi_cond_t *cond, pi_mutex_t *mutex)
 			cond->cond++;
 			id = cond->cond;
 			cond->wake_id = id;
+			if (broadcast)
+				cond->pending_wake = cond->pending_wait;
 			pi_mutex_unlock(&cond->priv_mut);
 		} else {
 			return errno;
@@ -160,38 +168,10 @@ int pi_cond_signal(pi_cond_t *cond, pi_mutex_t *mutex)
 
 int pi_cond_broadcast(pi_cond_t *cond, pi_mutex_t *mutex)
 {
-	int ret;
-	__u32 id;
+	return pi_cond_signal_common(cond, mutex, true);
+}
 
-	pi_mutex_lock(&cond->priv_mut);
-
-	if (!cond->pending_wait) {
-		/* No waiters pending */
-		pi_mutex_unlock(&cond->priv_mut);
-		return 0;
-	}
-	cond->cond++;
-	id = cond->cond;
-	cond->wake_id = id;
-	cond->pending_wake = cond->pending_wait;
-	pi_mutex_unlock(&cond->priv_mut);
-
-	do {
-		ret = futex_cmp_requeue_pi(cond, id, INT_MAX, mutex);
-		if (ret >= 0) {
-			/* Wakeup performed */
-			break;
-		} else if (errno == EAGAIN) {
-			/* id changed */
-			pi_mutex_lock(&cond->priv_mut);
-			cond->cond++;
-			id = cond->cond;
-			cond->wake_id = id;
-			cond->pending_wake = cond->pending_wait;
-			pi_mutex_unlock(&cond->priv_mut);
-		} else {
-			return errno;
-		}
-	} while (1);
-	return 0;
+int pi_cond_signal(pi_cond_t *cond, pi_mutex_t *mutex)
+{
+	return pi_cond_signal_common(cond, mutex, false);
 }
