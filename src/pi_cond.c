@@ -52,12 +52,6 @@ out:
 	return ret;
 }
 
-int pi_cond_destroy(pi_cond_t *cond)
-{
-	memset(cond, 0, sizeof(*cond));
-	return 0;
-}
-
 int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 {
 	int ret;
@@ -126,20 +120,36 @@ again:
 				   (broadcast) ? INT_MAX : 0,
 				   cond->mutex);
 	if (ret >= 0)
-		return 0;
+		return ret;
 
 	if (errno == EAGAIN)
 		goto again;
 
-	return errno;
-}
-
-int pi_cond_broadcast(pi_cond_t *cond)
-{
-	return pi_cond_signal_common(cond, true);
+	return -errno;
 }
 
 int pi_cond_signal(pi_cond_t *cond)
 {
-	return pi_cond_signal_common(cond, false);
+	int ret = pi_cond_signal_common(cond, false);
+
+	return (ret >= 0) ? 0 : -ret;
+}
+
+int pi_cond_broadcast(pi_cond_t *cond)
+{
+	int ret = pi_cond_signal_common(cond, true);
+
+	return (ret >= 0) ? 0 : -ret;
+}
+
+int pi_cond_destroy(pi_cond_t *cond)
+{
+	int ret = pi_cond_signal_common(cond, true);
+
+	if (ret == 0) {
+		memset(cond, 0, sizeof(*cond));
+		return 0;
+	}
+
+	return (ret > 0) ? EBUSY : -ret;
 }
