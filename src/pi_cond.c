@@ -27,28 +27,21 @@ void pi_cond_free(pi_cond_t *cond)
 
 int pi_cond_init(pi_cond_t *cond, pi_mutex_t *mutex, uint32_t flags)
 {
-	struct timespec ts = { 0, 0 };
 	int ret;
 
-	if (flags & ~(RTPI_COND_PSHARED)) {
-		ret = EINVAL;
-		goto out;
-	}
-	memset(cond, 0, sizeof(*cond));
-	if (flags & RTPI_COND_PSHARED) {
-		cond->flags = RTPI_COND_PSHARED;
-	}
+	if (flags & ~(RTPI_COND_PSHARED))
+		return EINVAL;
 
 	/* PSHARED has to match on both. */
-	if ((cond->flags & RTPI_COND_PSHARED) ^ (mutex->flags % RTPI_MUTEX_PSHARED)) {
-		ret = EINVAL;
-		goto out;
-	}
-	pi_mutex_init(&cond->priv_mut, cond->flags & RTPI_COND_PSHARED);
+	if ((flags & RTPI_COND_PSHARED) ^ (mutex->flags & RTPI_MUTEX_PSHARED))
+		return EINVAL;
+
+	memset(cond, 0, sizeof(*cond));
+	cond->flags = flags;
+
+	ret = pi_mutex_init(&cond->priv_mut, cond->flags & RTPI_COND_PSHARED);
 	cond->mutex = mutex;
 
-	ret = 0;
-out:
 	return ret;
 }
 
