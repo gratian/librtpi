@@ -72,7 +72,7 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 {
 	int ret;
 	int err;
-	__u32 wait_id;
+	__u32 wake_id;
 	__u32 futex_id;
 	struct cancel_data cdata = { .mutex = mutex };
 
@@ -80,7 +80,7 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 		return EINVAL;
 
 	cond->cond++;
-	wait_id = cond->cond;
+	wake_id = cond->wake_id;
   again:
 	futex_id = cond->cond;
 	ret = pi_mutex_unlock(mutex);
@@ -111,8 +111,10 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 
 	/* If futex VAL changed between unlock & wait. */
 	if (err == EAGAIN) {
-		/* Check if we raced with a waker. */
-		if (cond->wake_id >= wait_id)
+		/* Check if we raced with a waker. If there's a new
+		 * wake_id it means we've raced with a waker that came
+		 * after us and we might have missed a wake up, stay awake. */
+		if (cond->wake_id != wake_id)
 			return 0;
 
 		/* Reload VAL and try again */
