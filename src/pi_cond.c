@@ -10,13 +10,6 @@
 #include "rtpi.h"
 #include "pi_futex.h"
 
-/*
- * This wrapper for early library validation only.
- * TODO: Replace with pthread_cond_t wrapper with a new cond implementation.
- *       Base this on the older version of the condvar, with the patch from
- *       Dinakar and Darren to enable priority fifo wakeup order.
- */
-
 pi_cond_t *pi_cond_alloc(void)
 {
 	return malloc(sizeof(pi_cond_t));
