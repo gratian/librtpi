@@ -15,14 +15,12 @@
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
-
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <sys/time.h>
 
 #include "rtpi.h"
 
@@ -41,18 +39,14 @@ static int do_test(void)
 		exit(1);
 	}
 
-	/* Waiting for the condition will fail.  But we want the timeout here.  */
-	if (gettimeofday(&tv, NULL) != 0) {
-		puts("gettimeofday failed");
+	err = clock_gettime(CLOCK_MONOTONIC, &ts);
+	if (err != 0) {
+		printf("clock_gettime failed with error %s\n", strerror(err));
 		exit(1);
 	}
+	ts.tv_sec++;
 
-	TIMEVAL_TO_TIMESPEC(&tv, &ts);
-	ts.tv_nsec += 500000000;
-	if (ts.tv_nsec >= 1000000000) {
-		ts.tv_nsec -= 1000000000;
-		++ts.tv_sec;
-	}
+	/* Expected timeout after 1 second */
 	err = pi_cond_timedwait(&cond, &ts);
 	if (err == 0) {
 		/* This could in theory happen but here without any signal and
