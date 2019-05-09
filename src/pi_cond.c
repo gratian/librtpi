@@ -72,40 +72,33 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 
 	cond->cond++;
 	wait_id = cond->cond;
-	do {
-		futex_id = cond->cond;
-		pi_mutex_unlock(&cond->priv_mut);
+  again:
+	futex_id = cond->cond;
+	pi_mutex_unlock(&cond->priv_mut);
 
-		ret = futex_wait_requeue_pi(cond, futex_id, abstime, mutex);
-		err = errno;
+	ret = futex_wait_requeue_pi(cond, futex_id, abstime, mutex);
 
+	/* All good. Proper wakeup + we own the lock */
+	if (!ret)
+		return 0;
+
+	if (errno == EAGAIN) {
+		/* futex VAL changed between unlock & wait */
 		pi_mutex_lock(&cond->priv_mut);
-		if (ret < 0) {
-			if (err == EAGAIN) {
-				/* futex VAL changed between unlock & wait */
-				if (cond->wake_id >= wait_id) {
-					/* There is one wakeup pending for us */
-					pi_mutex_unlock(&cond->priv_mut);
-					pi_mutex_lock(mutex);
-					ret = 0;
-					break;
-				}
-				/* Reload VAL and try again */
-				continue;
-			} else {
-				/* Error, abort */
-				pi_mutex_unlock(&cond->priv_mut);
-				pi_mutex_lock(mutex);
-				ret = err;
-				break;
-			}
+		if (cond->wake_id >= wait_id) {
+			/* There is one wakeup pending for us */
+			pi_mutex_unlock(&cond->priv_mut);
+			pi_mutex_lock(mutex);
+			return 0;
 		}
-		/* All good. Proper wakeup + we own the lock */
-		pi_mutex_unlock(&cond->priv_mut);
-		ret = 0;
-		break;
-	} while (1);
-	return ret;
+		/* Reload VAL and try again */
+		cond->cond++;
+		goto again;
+	}
+
+	/* Error, grab the user mutex before returning */
+	pi_mutex_lock(mutex);
+	return errno;
 }
 
 int pi_cond_wait(pi_cond_t *cond, pi_mutex_t *mutex)
@@ -118,31 +111,23 @@ static int pi_cond_signal_common(pi_cond_t *cond, pi_mutex_t *mutex, bool broadc
 	int ret;
 	__u32 id;
 
+again:
 	pi_mutex_lock(&cond->priv_mut);
 	cond->cond++;
 	id = cond->cond;
 	cond->wake_id = id;
 	pi_mutex_unlock(&cond->priv_mut);
 
-	do {
-		ret = futex_cmp_requeue_pi(cond, id,
-					   (broadcast) ? INT_MAX : 0,
-					   mutex);
-		if (ret >= 0) {
-			/* Wakeup performed */
-			break;
-		} else if (errno == EAGAIN) {
-			/* id changed */
-			pi_mutex_lock(&cond->priv_mut);
-			cond->cond++;
-			id = cond->cond;
-			cond->wake_id = id;
-			pi_mutex_unlock(&cond->priv_mut);
-		} else {
-			return errno;
-		}
-	} while (1);
-	return 0;
+	ret = futex_cmp_requeue_pi(cond, id,
+				   (broadcast) ? INT_MAX : 0,
+				   mutex);
+	if (ret >= 0)
+		return 0;
+
+	if (errno == EAGAIN)
+		goto again;
+
+	return errno;
 }
 
 int pi_cond_broadcast(pi_cond_t *cond, pi_mutex_t *mutex)
