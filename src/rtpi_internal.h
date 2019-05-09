@@ -29,10 +29,9 @@ union pi_cond {
 
 		union pi_mutex	priv_mut;
 		__u32		wake_id;
-		__u32		pending_wait;
 		union pi_mutex	*mutex;
 	};
-	__u32 pad[22];
+	__u32 pad[20];
 };
 
 #define PI_COND_INIT(m, f) \
@@ -40,7 +39,6 @@ union pi_cond {
 	, .flags = f \
 	, .priv_mut = PI_MUTEX_INIT(f) \
 	, .wake_id = 0 \
-	, .pending_wait = 0 \
 	, .mutex = m }
 
 #endif // RPTI_H_INTERNAL_H

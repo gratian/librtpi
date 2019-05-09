@@ -73,11 +73,10 @@ int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 		pi_mutex_unlock(&cond->priv_mut);
 		return ret;
 	}
-	cond->pending_wait++;
+
 	cond->cond++;
 	wait_id = cond->cond;
 	do {
-
 		futex_id = cond->cond;
 		pi_mutex_unlock(&cond->priv_mut);
 
@@ -88,7 +87,6 @@ int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 				pi_mutex_lock(&cond->priv_mut);
 				if (cond->wake_id >= wait_id) {
 					/* There is one wakeup pending for us */
-					cond->pending_wait--;
 					pi_mutex_unlock(&cond->priv_mut);
 					pi_mutex_lock(cond->mutex);
 					ret = 0;
@@ -98,18 +96,12 @@ int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 				continue;
 			} else {
 				/* Error, abort */
-				pi_mutex_lock(&cond->priv_mut);
-				cond->pending_wait--;
-				pi_mutex_unlock(&cond->priv_mut);
 				pi_mutex_lock(cond->mutex);
 				ret = errno;
 				break;
 			}
 		}
 		/* All good. Proper wakeup + we own the lock */
-		pi_mutex_lock(&cond->priv_mut);
-		cond->pending_wait--;
-		pi_mutex_unlock(&cond->priv_mut);
 		ret = 0;
 		break;
 	} while (1);
@@ -127,12 +119,6 @@ static int pi_cond_signal_common(pi_cond_t *cond, bool broadcast)
 	__u32 id;
 
 	pi_mutex_lock(&cond->priv_mut);
-
-	if (!cond->pending_wait) {
-		/* No waiters pending */
-		pi_mutex_unlock(&cond->priv_mut);
-		return 0;
-	}
 	cond->cond++;
 	id = cond->cond;
 	cond->wake_id = id;
