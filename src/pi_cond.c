@@ -84,9 +84,8 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 		if (ret < 0) {
 			if (err == EAGAIN) {
 				/* futex VAL changed between unlock & wait */
-				if (cond->wake_id >= wait_id && cond->pending_wake) {
+				if (cond->wake_id >= wait_id) {
 					/* There is one wakeup pending for us */
-					cond->pending_wake--;
 					cond->pending_wait--;
 					pi_mutex_unlock(&cond->priv_mut);
 					pi_mutex_lock(mutex);
@@ -105,14 +104,10 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 			}
 		}
 		/* All good. Proper wakeup + we own the lock */
-		if (cond->pending_wake) {
-			cond->pending_wait--;
-			cond->pending_wake--;
-			pi_mutex_unlock(&cond->priv_mut);
-			ret = 0;
-			break;
-		}
-		/* No wakeup for us, try again… */
+		cond->pending_wait--;
+		pi_mutex_unlock(&cond->priv_mut);
+		ret = 0;
+		break;
 	} while (1);
 	return ret;
 }
@@ -137,10 +132,6 @@ static int pi_cond_signal_common(pi_cond_t *cond, pi_mutex_t *mutex, bool broadc
 	cond->cond++;
 	id = cond->cond;
 	cond->wake_id = id;
-	if (broadcast)
-		cond->pending_wake = cond->pending_wait;
-	else
-		cond->pending_wake++;
 	pi_mutex_unlock(&cond->priv_mut);
 
 	do {
@@ -156,8 +147,6 @@ static int pi_cond_signal_common(pi_cond_t *cond, pi_mutex_t *mutex, bool broadc
 			cond->cond++;
 			id = cond->cond;
 			cond->wake_id = id;
-			if (broadcast)
-				cond->pending_wake = cond->pending_wait;
 			pi_mutex_unlock(&cond->priv_mut);
 		} else {
 			return errno;
