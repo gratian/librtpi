@@ -16,14 +16,16 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#define _GNU_SOURCE
 #include <errno.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+
+#include "rtpi.h"
 
 static char fname[] = "/tmp/tst-cond12-XXXXXX";
 static int fd;

@@ -27,12 +27,13 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "rtpi.h"
+
 #define THREADS_NUM 5
 #define MAXITER 50000
 
-static pi_mutex_t mutex;
-static pthread_mutexattr_t mutex_attr;
-static pi_cond_t cond;
+static DEFINE_PI_MUTEX(mutex, 0);
+static DEFINE_PI_COND(cond, &mutex, 0);
 static pthread_t threads[THREADS_NUM];
 static int pending = 0;
 

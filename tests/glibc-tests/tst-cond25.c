@@ -29,14 +29,16 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "rtpi.h"
+
 #define NUM 5
 #define ITERS 10000
 #define COUNT 100
 
 typedef void *(*thr_func) (void *);
 
-pi_mutex_t mutex;
-pi_cond_t cond;
+static DEFINE_PI_MUTEX(mutex, 0);
+static DEFINE_PI_COND(cond, &mutex, 0);
 
 void cleanup(void *u)
 {

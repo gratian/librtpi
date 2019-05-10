@@ -24,8 +24,10 @@
 #include <time.h>
 #include <sys/time.h>
 
-static pi_mutex_t mut;
-static pi_cond_t cond = PTHREAD_COND_INITIALIZER;
+#include "rtpi.h"
+
+static DEFINE_PI_MUTEX(mut, 0);
+static DEFINE_PI_COND(cond, &mut, 0);
 
 static int do_test(void)
 {

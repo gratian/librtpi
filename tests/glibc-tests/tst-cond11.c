@@ -17,10 +17,11 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+
+#include "rtpi.h"
 
 #if defined _POSIX_CLOCK_SELECTION && _POSIX_CLOCK_SELECTION >= 0
 static int run_test(clockid_t cl)

@@ -22,8 +22,10 @@
 #include <string.h>
 #include <unistd.h>
 
-pi_mutex_t mutex;
-pi_cond_t cond;
+#include "rtpi.h"
+
+static DEFINE_PI_MUTEX(mutex, 0);
+static DEFINE_PI_COND(cond, &mutex, 0);
 
 #define CHECK_RETURN_VAL_OR_FAIL(ret,str) \
   ({ if ((ret) != 0) \

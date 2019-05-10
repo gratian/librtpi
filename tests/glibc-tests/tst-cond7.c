@@ -25,6 +25,8 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include "rtpi.h"
+
 typedef struct {
 	pi_cond_t cond;
 	pi_mutex_t lock;
