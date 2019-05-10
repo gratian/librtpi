@@ -31,7 +31,7 @@ int pi_cond_init(pi_cond_t *cond, pi_mutex_t *mutex, uint32_t flags)
 	int ret;
 
 	if (flags & ~(RTPI_COND_PSHARED)) {
-		ret = -EINVAL;
+		ret = EINVAL;
 		goto out;
 	}
 	memset(cond, 0, sizeof(*cond));
@@ -41,7 +41,7 @@ int pi_cond_init(pi_cond_t *cond, pi_mutex_t *mutex, uint32_t flags)
 
 	/* PSHARED has to match on both. */
 	if ((cond->flags & RTPI_COND_PSHARED) ^ (mutex->flags % RTPI_MUTEX_PSHARED)) {
-		ret = -EINVAL;
+		ret = EINVAL;
 		goto out;
 	}
 	pi_mutex_init(&cond->priv_mut, cond->flags & RTPI_COND_PSHARED);
@@ -102,7 +102,7 @@ int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 				pi_mutex_lock(&cond->priv_mut);
 				cond->pending_wait--;
 				pi_mutex_unlock(&cond->priv_mut);
-				ret = -errno;
+				ret = errno;
 				break;
 			}
 		}
@@ -163,7 +163,7 @@ static int pi_cond_signal_common(pi_cond_t *cond, bool broadcast)
 				cond->pending_wake = cond->pending_wait;
 			pi_mutex_unlock(&cond->priv_mut);
 		} else {
-			return -errno;
+			return errno;
 		}
 	} while (1);
 	return 0;
