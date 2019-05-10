@@ -102,16 +102,17 @@ int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 				pi_mutex_lock(&cond->priv_mut);
 				cond->pending_wait--;
 				pi_mutex_unlock(&cond->priv_mut);
+				pi_mutex_lock(cond->mutex);
 				ret = errno;
 				break;
 			}
 		}
 		/* All good. Proper wakeup + we own the lock */
+		pi_mutex_lock(&cond->priv_mut);
 		if (cond->pending_wake) {
 			cond->pending_wait--;
 			cond->pending_wake--;
 			pi_mutex_unlock(&cond->priv_mut);
-			pi_mutex_lock(cond->mutex);
 			ret = 0;
 			break;
 		}
