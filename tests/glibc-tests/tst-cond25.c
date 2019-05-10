@@ -186,39 +186,15 @@ int do_test_wait(thr_func f)
 {
 	pthread_t w[NUM];
 	pthread_t s;
-	pthread_mutexattr_t attr;
 	int i, j, ret = 0;
 	void *thr_ret;
 
 	for (i = 0; i < COUNT; i++) {
-		if ((ret = pthread_mutexattr_init(&attr)) != 0) {
-			printf("mutexattr_init failed: %s\n", strerror(ret));
-			goto out;
-		}
-
-		if ((ret = pthread_mutexattr_setprotocol(&attr,
-							 PTHREAD_PRIO_INHERIT))
-		    != 0) {
-			printf("mutexattr_setprotocol failed: %s\n",
-			       strerror(ret));
-			goto out;
-		}
-
-		if ((ret = pi_cond_init(&cond, NULL)) != 0) {
-			printf("cond_init failed: %s\n", strerror(ret));
-			goto out;
-		}
-
-		if ((ret = pi_mutex_init(&mutex, &attr)) != 0) {
-			printf("mutex_init failed: %s\n", strerror(ret));
-			goto out;
-		}
-
 		for (j = 0; j < NUM; j++)
 			if ((ret = pthread_create(&w[j], NULL,
 						  f,
-						  (void *)(uintptr_t) j)) !=
-			    0) {
+						  (void *)(uintptr_t) j)) != 0)
+			{
 				printf("waiter[%d]: create failed: %s\n", j,
 				       strerror(ret));
 				goto out;

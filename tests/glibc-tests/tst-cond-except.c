@@ -46,18 +46,6 @@ void clean(void *arg)
 void *thr(void *arg)
 {
 	int ret = 0;
-	pthread_mutexattr_t mutexAttr;
-	ret = pthread_mutexattr_init(&mutexAttr);
-	CHECK_RETURN_VAL_OR_FAIL(ret, "pthread_mutexattr_init");
-
-	ret = pthread_mutexattr_setprotocol(&mutexAttr, PTHREAD_PRIO_INHERIT);
-	CHECK_RETURN_VAL_OR_FAIL(ret, "pthread_mutexattr_setprotocol");
-
-	ret = pi_mutex_init(&mutex, &mutexAttr);
-	CHECK_RETURN_VAL_OR_FAIL(ret, "pi_mutex_init");
-
-	ret = pi_cond_init(&cond, 0);
-	CHECK_RETURN_VAL_OR_FAIL(ret, "pi_cond_init");
 
 	puts("th: Init done, entering wait...");
 

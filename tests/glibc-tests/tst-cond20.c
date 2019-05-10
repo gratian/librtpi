@@ -138,7 +138,7 @@ static int do_test(void)
 		}
 
 		count = 0;
-		err = pi_cond_init(&cond, NULL);
+		err = pi_cond_init(&cond, &mut, 0);
 		if (err) {
 			printf("pi_cond_init failed: %s\n", strerror(err));
 			return 1;

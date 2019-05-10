@@ -140,31 +140,6 @@ static int do_test_wait(threadfunc f)
 
 	puts("Starting test");
 
-	rv = pthread_mutexattr_init(&mutex_attr);
-	if (rv) {
-		printf("pthread_mutexattr_init: %s(%d)\n", strerror(rv), rv);
-		return 1;
-	}
-
-	rv = pthread_mutexattr_setprotocol(&mutex_attr, PTHREAD_PRIO_INHERIT);
-	if (rv) {
-		printf("pthread_mutexattr_setprotocol: %s(%d)\n", strerror(rv),
-		       rv);
-		return 1;
-	}
-
-	rv = pi_mutex_init(&mutex, &mutex_attr);
-	if (rv) {
-		printf("pi_mutex_init: %s(%d)\n", strerror(rv), rv);
-		return 1;
-	}
-
-	rv = pi_cond_init(&cond, NULL);
-	if (rv) {
-		printf("pi_cond_init: %s(%d)\n", strerror(rv), rv);
-		return 1;
-	}
-
 	for (i = 0; i < THREADS_NUM; i++) {
 		retval[i] = i;
 		rv = pthread_create(&threads[i], NULL, f, &retval[i]);

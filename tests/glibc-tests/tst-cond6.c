@@ -38,10 +38,8 @@ static int do_test(void)
 	char data[ps];
 	void *mem;
 	int fd;
-	pthread_mutexattr_t ma;
 	pi_mutex_t *mut1;
 	pi_mutex_t *mut2;
-	pthread_condattr_t ca;
 	pi_cond_t *cond;
 	pid_t pid;
 	int result = 0;
@@ -71,48 +69,28 @@ static int do_test(void)
 	}
 
 	mut1 = (pi_mutex_t *) (((uintptr_t) mem
-				     + __alignof(pi_mutex_t))
-				    & ~(__alignof(pi_mutex_t) - 1));
+				+ __alignof(pi_mutex_t))
+			       & ~(__alignof(pi_mutex_t) - 1));
 	mut2 = mut1 + 1;
 
 	cond = (pi_cond_t *) (((uintptr_t) (mut2 + 1)
-				    + __alignof(pi_cond_t))
-				   & ~(__alignof(pi_cond_t) - 1));
+			       + __alignof(pi_cond_t))
+			      & ~(__alignof(pi_cond_t) - 1));
 
 	condition = (int *)(((uintptr_t) (cond + 1) + __alignof(int))
 			    & ~(__alignof(int) - 1));
 
-	if (pthread_mutexattr_init(&ma) != 0) {
-		puts("mutexattr_init failed");
-		exit(1);
-	}
-
-	if (pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED) != 0) {
-		puts("mutexattr_setpshared failed");
-		exit(1);
-	}
-
-	if (pi_mutex_init(mut1, &ma) != 0) {
+	if (pi_mutex_init(mut1, RTPI_MUTEX_PSHARED) != 0) {
 		puts("1st mutex_init failed");
 		exit(1);
 	}
 
-	if (pi_mutex_init(mut2, &ma) != 0) {
+	if (pi_mutex_init(mut2, RTPI_MUTEX_PSHARED) != 0) {
 		puts("2nd mutex_init failed");
 		exit(1);
 	}
 
-	if (pthread_condattr_init(&ca) != 0) {
-		puts("condattr_init failed");
-		exit(1);
-	}
-
-	if (pthread_condattr_setpshared(&ca, PTHREAD_PROCESS_SHARED) != 0) {
-		puts("condattr_setpshared failed");
-		exit(1);
-	}
-
-	if (pi_cond_init(cond, &ca) != 0) {
+	if (pi_cond_init(cond, mut2, RTPI_COND_PSHARED) != 0) {
 		puts("cond_init failed");
 		exit(1);
 	}

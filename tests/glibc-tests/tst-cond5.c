@@ -31,29 +31,13 @@ static DEFINE_PI_COND(cond, &mut, 0);
 
 static int do_test(void)
 {
-	pthread_mutexattr_t ma;
 	int err;
 	struct timespec ts;
-	struct timeval tv;
-
-	if (pthread_mutexattr_init(&ma) != 0) {
-		puts("mutexattr_init failed");
-		exit(1);
-	}
-
-	if (pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_ERRORCHECK) != 0) {
-		puts("mutexattr_settype failed");
-		exit(1);
-	}
-
-	if (pi_mutex_init(&mut, &ma) != 0) {
-		puts("mutex_init failed");
-		exit(1);
-	}
 
 	/* Get the mutex.  */
-	if (pi_mutex_lock(&mut) != 0) {
-		puts("mutex_lock failed");
+	err = pi_mutex_lock(&mut);
+	if (err != 0) {
+		printf("mutex_lock failed with error %s\n", strerror(err));
 		exit(1);
 	}
 
