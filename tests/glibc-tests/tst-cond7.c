@@ -28,8 +28,8 @@
 #include "rtpi.h"
 
 typedef struct {
-	pi_cond_t cond;
-	pi_mutex_t lock;
+	pi_cond_t *cond;
+	pi_mutex_t *lock;
 	pthread_t h;
 } T;
 
@@ -47,24 +47,24 @@ static void *tf(void *arg)
 
 	T *t = (T *) arg;
 
-	if (pi_mutex_lock(&t->lock) != 0) {
+	if (pi_mutex_lock(t->lock) != 0) {
 		puts("child: lock failed");
 		exit(1);
 	}
 
 	done = true;
 
-	if (pi_cond_signal(&t->cond) != 0) {
+	if (pi_cond_signal(t->cond) != 0) {
 		puts("child: cond_signal failed");
 		exit(1);
 	}
 
-	if (pi_cond_wait(&t->cond) != 0) {
+	if (pi_cond_wait(t->cond) != 0) {
 		puts("child: cond_wait failed");
 		exit(1);
 	}
 
-	if (pi_mutex_unlock(&t->lock) != 0) {
+	if (pi_mutex_unlock(t->lock) != 0) {
 		puts("child: unlock failed");
 		exit(1);
 	}
@@ -75,6 +75,7 @@ static void *tf(void *arg)
 static int do_test(void)
 {
 	int i;
+
 #define N 100
 	T *t[N];
 	for (i = 0; i < N; ++i) {
@@ -86,13 +87,29 @@ static int do_test(void)
 			exit(1);
 		}
 
-		if (pi_mutex_init(&t[i]->lock, NULL) != 0
-		    || pi_cond_init(&t[i]->cond, NULL) != 0) {
-			puts("an _init function failed");
+		t[i]->lock = pi_mutex_alloc();
+		if (t[i]->lock == NULL) {
+			puts("out of memory");
 			exit(1);
 		}
 
-		if (pi_mutex_lock(&t[i]->lock) != 0) {
+		if (pi_mutex_init(t[i]->lock, 0) != 0) {
+			puts("pi_mutex_init function failed");
+			exit(1);
+		}
+
+		t[i]->cond = pi_cond_alloc();
+		if (t[i]->cond == NULL) {
+			puts("out of memory");
+			exit(1);
+		}
+
+		if (pi_cond_init(t[i]->cond, t[i]->lock, 0) != 0) {
+			puts("pi_cond_init function failed");
+			exit(1);
+		}
+
+		if (pi_mutex_lock(t[i]->lock) != 0) {
 			puts("initial mutex_lock failed");
 			exit(1);
 		}
@@ -105,14 +122,14 @@ static int do_test(void)
 		}
 
 		do
-			if (pi_cond_wait(&t[i]->cond) != 0) {
+			if (pi_cond_wait(t[i]->cond) != 0) {
 				puts("cond_wait failed");
 				exit(1);
 			}
 		while (!done) ;
 
 		/* Release the lock since the cancel handler will get it.  */
-		if (pi_mutex_unlock(&t[i]->lock) != 0) {
+		if (pi_mutex_unlock(t[i]->lock) != 0) {
 			puts("mutex_unlock failed");
 			exit(1);
 		}
@@ -136,8 +153,11 @@ static int do_test(void)
 		}
 	}
 
-	for (i = 0; i < N; ++i)
+	for (i = 0; i < N; ++i) {
+		pi_mutex_free(t[i]->lock);
+		pi_cond_free(t[i]->cond);
 		free(t[i]);
+	}
 
 	return 0;
 }
