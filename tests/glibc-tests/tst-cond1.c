@@ -74,7 +74,7 @@ static int do_test(void)
 	   scenario we are testing here.  */
 	err = pi_cond_wait(&cond);
 	if (err != 0)
-		error(EXIT_FAILURE, err, "parent: cannot wait fir signal");
+		error(EXIT_FAILURE, err, "parent: cannot wait for signal");
 
 	puts("parent: got signal");
 

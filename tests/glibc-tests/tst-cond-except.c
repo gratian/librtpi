@@ -89,7 +89,7 @@ int do_test(void)
 	ret = pthread_cancel(thread);
 	CHECK_RETURN_VAL_OR_FAIL(ret, "pthread_cancel");
 
-	puts("main: Joining th...");
+	puts("main: Joining thread...");
 	ret = pthread_join(thread, NULL);
 	CHECK_RETURN_VAL_OR_FAIL(ret, "pthread_join");
 

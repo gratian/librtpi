@@ -63,7 +63,7 @@ void *thread_fun_timed(void *arg)
 
 			/* There should be no timeout either.  */
 			if (rv) {
-				printf("pi_cond_wait: %s(%d)\n"
+				printf("pi_cond_wait: %s(%d)\n",
 				       strerror(rv), rv);
 				*ret = 1;
 				goto out;
@@ -107,7 +107,7 @@ void *thread_fun(void *arg)
 			rv = pi_cond_wait(&cond);
 
 			if (rv) {
-				printf("pi_cond_wait: %s(%d)\n"
+				printf("pi_cond_wait: %s(%d)\n",
 				       strerror(rv), rv);
 				*ret = 1;
 				goto out;
