@@ -98,13 +98,13 @@ static int run_test(clockid_t cl)
 		return 1;
 	}
 
-	if (pi_mutex_destroy(&mut) != 0) {
-		puts("mutex_destroy failed");
+	if (pi_cond_destroy(&cond) != 0) {
+		puts("cond_destroy failed");
 		return 1;
 	}
 
-	if (pi_cond_destroy(&cond) != 0) {
-		puts("cond_destroy failed");
+	if (pi_mutex_destroy(&mut) != 0) {
+		puts("mutex_destroy failed");
 		return 1;
 	}
 
