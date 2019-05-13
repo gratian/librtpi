@@ -58,6 +58,14 @@ static void pi_cond_wait_cleanup(void *arg)
 		pi_mutex_lock(cdata->mutex);
 }
 
+static inline bool ts_valid(const struct timespec *restrict ts)
+{
+	if (ts->tv_sec < 0 || ts->tv_nsec < 0 || ts->tv_nsec >= 1000000000L)
+		return false;
+
+	return true;
+}
+
 int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 {
 	int ret;
@@ -65,6 +73,9 @@ int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
 	__u32 wait_id;
 	__u32 futex_id;
 	struct cancel_data cdata = { .mutex = cond->mutex };
+
+	if (abstime && !ts_valid(abstime))
+		return EINVAL;
 
 	cond->cond++;
 	wait_id = cond->cond;
