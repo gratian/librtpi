@@ -51,7 +51,7 @@ static void pi_cond_wait_cleanup(void *arg)
 		pi_mutex_lock(cdata->mutex);
 }
 
-static inline bool ts_valid(const struct timespec *restrict ts)
+static inline bool ts_valid(const struct timespec *ts)
 {
 	if (ts->tv_sec < 0 || ts->tv_nsec < 0 || ts->tv_nsec >= 1000000000L)
 		return false;
@@ -59,7 +59,7 @@ static inline bool ts_valid(const struct timespec *restrict ts)
 	return true;
 }
 
-int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *restrict abstime)
+int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *abstime)
 {
 	int ret;
 	int err;
