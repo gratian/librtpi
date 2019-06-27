@@ -9,9 +9,11 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/cdefs.h>
 
 #include "rtpi_internal.h"
 
+__BEGIN_DECLS
 typedef union pi_mutex pi_mutex_t;
 typedef union pi_cond pi_cond_t;
 
@@ -64,5 +66,6 @@ int pi_cond_timedwait(pi_cond_t *cond, const struct timespec *abstime);
 int pi_cond_signal(pi_cond_t *cond);
 
 int pi_cond_broadcast(pi_cond_t *cond);
+__END_DECLS
 
 #endif // RTPI_H
