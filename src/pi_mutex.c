@@ -57,6 +57,9 @@ int pi_mutex_lock(pi_mutex_t *mutex)
 {
 	int ret;
 
+	if (!mutex)
+		return EINVAL;
+
 	ret = pi_mutex_trylock(mutex);
 	if (!ret || ret == EDEADLOCK)
 		return ret;
@@ -85,6 +88,9 @@ int pi_mutex_unlock(pi_mutex_t *mutex)
 {
 	pid_t pid;
 	bool ret;
+
+	if (!mutex)
+		return EINVAL;
 
 	pid = gettid();
 	if (pid != (mutex->futex & FUTEX_TID_MASK))
