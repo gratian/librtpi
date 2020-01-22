@@ -55,6 +55,7 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 		      const struct timespec *restrict abstime)
 {
 	int ret;
+	int err;
 	__u32 wait_id;
 	__u32 futex_id;
 
@@ -76,8 +77,10 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 		pi_mutex_unlock(&cond->priv_mut);
 
 		ret = futex_wait_requeue_pi(cond, futex_id, abstime, mutex);
+		err = errno;
+
 		if (ret < 0) {
-			if (errno == EAGAIN) {
+			if (err == EAGAIN) {
 				/* futex VAL changed between unlock & wait */
 				pi_mutex_lock(&cond->priv_mut);
 				if (cond->wake_id >= wait_id && cond->pending_wake) {
@@ -97,7 +100,7 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 				cond->pending_wait--;
 				pi_mutex_unlock(&cond->priv_mut);
 				pi_mutex_lock(mutex);
-				ret = errno;
+				ret = err;
 				break;
 			}
 		}
