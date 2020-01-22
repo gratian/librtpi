@@ -79,10 +79,10 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 		ret = futex_wait_requeue_pi(cond, futex_id, abstime, mutex);
 		err = errno;
 
+		pi_mutex_lock(&cond->priv_mut);
 		if (ret < 0) {
 			if (err == EAGAIN) {
 				/* futex VAL changed between unlock & wait */
-				pi_mutex_lock(&cond->priv_mut);
 				if (cond->wake_id >= wait_id && cond->pending_wake) {
 					/* There is one wakeup pending for us */
 					cond->pending_wake--;
@@ -96,7 +96,6 @@ int pi_cond_timedwait(pi_cond_t *cond, pi_mutex_t *mutex,
 				continue;
 			} else {
 				/* Error, abort */
-				pi_mutex_lock(&cond->priv_mut);
 				cond->pending_wait--;
 				pi_mutex_unlock(&cond->priv_mut);
 				pi_mutex_lock(mutex);
