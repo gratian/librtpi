@@ -52,8 +52,8 @@ Copyright © 2018 VMware, Inc. All Rights Reserved.
 
 ## Types
 ### pi_mutex_t
-Wrapper to pthread_mutex_t guranteed to be initialized using a
-mutexattr with the PTHREAD_PRIO_INHERIT protocal set.
+New primitive modeled after the POSIX pthread_mutex_t guaranteed to
+use priority inheritance.
 
 ### pi_cond_t
 New primitive modeled after the POSIX pthread_cond_t, with the following
@@ -69,45 +69,41 @@ broadcast calls. The mutex is used to requeue woken waiters and avoid the
 
 ## Functions
 ### PI Mutex
-The PI Mutex API represents a subset of the Pthread Mutex API, written
-specifically for priority inheritance aware condition variables. The calls wrap
-a pthread_mutex_t internally, but it is not exposed to the caller to examine,
-manipulate, or pass directly.
+The PI Mutex API models a subset of the Pthread Mutex API, written
+specifically for priority inheritance aware condition variables.
 
 #### int pi_mutex_init(pi_mutex_t \*mutex, uint32_t flags)
-Wrapper to pthread_mutex_init and pthread_mutexattr_setprotocol,
-ensuring PTHREAD_PRIO_INHERIT is set, and allows for the specification
-of process private or process shared.
+Initializes a PI aware mutex. Allows for the specification of process
+private or process shared flag.
+
+##### Where flags are:
+* RTPI_MUTEX_PSHARED
+
+##### And future flags may include
+* RTPI_MUTEX_ERRORCHECK
+* RTPI_MUTEX_ROBUST
 
 The following attributes are not supported:
 ##### type:
 * PTHREAD_MUTEX_RECURSIVE
 * PTHREAD_MUTEX_ERRORCHECK
+
 ##### robust:
 * PTHREAD_MUTEX_ROBUST
+
 ##### protocol:
 * PTHREAD_PRIO_NONE
 * PTHREAD_PRIO_PROTECT
 
-##### Where flags are:
-* RTPI_MUTEX_PSHARED
-##### And future flags may include
-* RTPI_MUTEX_ERRORCHECK
-* RTPI_MUTEX_ROBUST
-
 Returns 0 on success, otherwise an error number is returned.
 
 #### int pi_mutex_destroy(pi_mutex_t \*mutex)
-Simple wrapper to pthread_mutex_destroy.
 
 #### int pi_mutex_lock(pi_mutex_t \*mutex)
-Simple wrapper to pthread_mutex_lock.
 
 #### int pi_mutex_trylock(pi_mutex_t \*mutex)
-Simple wrapper to pthread_mutex_trylock.
 
 #### int pi_mutex_unlock(pi_mutex_t \*mutex)
-Simple wrapper to pthread_mutex_unlock.
 
 ### PI Condition
 The PI Condition API represents a new implementation of a Non-POSIX PI aware
