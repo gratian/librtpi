@@ -61,8 +61,8 @@ modifications.
 
 1. All wakeup events will wake the N highest priority waiters.
 2. Waiters will be woken in priority FIFO order.
-3. The associated mutex must be held when the condition variable is signaled or
-broadcast.
+3. The associated mutex must be held when the condition variable is
+signaled, broadcast, or destroyed.
 4. The associated mutex must be passed as a parameter to the signal and
 broadcast calls. The mutex is used to requeue woken waiters and avoid the
 "thundering herd" effect.

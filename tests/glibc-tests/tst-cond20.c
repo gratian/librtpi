@@ -110,14 +110,14 @@ static int do_test(void)
 			pi_cond_broadcast(&cond, &mut);
 		}
 
-		pi_mutex_unlock(&mut);
-
 		err = pi_cond_destroy(&cond);
 		if (err) {
 			printf("pi_cond_destroy failed: %s\n",
 			       strerror(err));
 			return 1;
 		}
+
+		pi_mutex_unlock(&mut);
 
 		/* Now clobber the cond variable which has been successfully
 		   destroyed above.  */
